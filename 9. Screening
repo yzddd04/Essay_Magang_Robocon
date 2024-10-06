@@ -1,0 +1,66 @@
+#include <Arduino.h>
+#include <Servo.h>
+
+// Definisikan pin untuk motor servo dan sensor jarak
+#define SERVO_PIN 9
+#define TRIG_PIN 10
+#define ECHO_PIN 11
+
+Servo servo; // Membuat objek servo
+
+void setup() {
+    servo.attach(SERVO_PIN); // Menyambungkan motor servo ke pin
+    pinMode(TRIG_PIN, OUTPUT); // Set pin trigger sebagai output
+    pinMode(ECHO_PIN, INPUT);   // Set pin echo sebagai input
+    Serial.begin(9600); // Memulai serial komunikasi
+}
+
+void loop() {
+    long distance = measureDistance(); // Mengukur jarak
+    Serial.print("Jarak ke lawan: ");
+    Serial.print(distance);
+    Serial.println(" cm");
+
+    if (distance < 50) { // Jika jarak ke lawan kurang dari 50 cm
+        performScreening(); // Lakukan screening
+    } else {
+        // Kembali ke posisi awal
+        servo.write(0); // Atur servo ke posisi awal
+    }
+
+    delay(1000); // Tunggu 1 detik sebelum pengukuran berikutnya
+}
+
+// Fungsi untuk mengukur jarak menggunakan sensor ultrasonik
+long measureDistance() {
+    digitalWrite(TRIG_PIN, LOW);
+    delayMicroseconds(2);
+    digitalWrite(TRIG_PIN, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(TRIG_PIN, LOW);
+    
+    long duration = pulseIn(ECHO_PIN, HIGH);
+    long distance = (duration * 0.034) / 2; // Menghitung jarak dalam cm
+    return distance;
+}
+
+// Fungsi untuk melakukan screening
+void performScreening() {
+    // Posisi untuk screening, sesuaikan sudut sesuai kebutuhan
+    int screeningPosition = 90; // Sudut servo untuk screening
+    servo.write(screeningPosition); // Atur servo ke posisi screening
+}
+
+/*
+Penjelasan Kode
+
+Inisialisasi: Kode dimulai dengan mengimpor pustaka yang diperlukan dan mendefinisikan pin untuk motor servo dan sensor jarak.
+Setup: Dalam fungsi setup(), kita menghubungkan motor servo dan mengatur mode pin untuk sensor jarak. Kita juga memulai komunikasi serial untuk mencetak hasil pengukuran jarak.
+Loop Utama: Di dalam loop(), kita memanggil fungsi measureDistance() untuk mendapatkan jarak ke lawan. Jika jarak kurang dari 50 cm, kita memanggil fungsi performScreening() untuk mengatur posisi robot.
+Fungsi measureDistance(): Fungsi ini mengontrol sensor ultrasonik untuk mengukur jarak. Ini mengirimkan sinyal ultrasonik dan mengukur waktu yang dibutuhkan untuk sinyal tersebut kembali.
+Fungsi performScreening(): Jika jarak ke lawan cukup dekat, fungsi ini akan menggerakkan servo ke sudut yang ditentukan untuk melakukan screening.
+
+Output
+Program ini akan mencetak jarak ke lawan di serial monitor setiap detik. 
+Ketika jarak lawan kurang dari 50 cm, robot akan bergerak ke posisi yang ditentukan untuk melakukan screening.
+*/
