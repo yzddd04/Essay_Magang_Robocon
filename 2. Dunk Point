@@ -1,0 +1,77 @@
+//Kode di bawah ini menggunakan HAL Library untuk STM32. 
+
+#include "stm32f4xx_hal.h"
+#include "lidar_driver.h"   // Driver LIDAR
+#include "mpu6050.h"        // Driver Gyro MPU6050
+#include "servo_motor.h"    // Driver untuk Aktuator Linier
+
+// Threshold jarak untuk mulai melakukan lompatan
+#define DUNK_DISTANCE_THRESHOLD 100 // cm
+
+// Inisialisasi variabel gyro
+MPU6050_t gyroData;
+
+// Fungsi untuk membaca jarak dari LIDAR
+uint16_t readLidarDistance() {
+    uint16_t distance = Lidar_GetDistance();
+    return distance; // Mengembalikan jarak dalam cm
+}
+
+// Fungsi untuk menggerakkan aktuator linier (melompat)
+void actuateJump() {
+    ServoMotor_Move(180);  // Aktuator bergerak ke posisi lompatan penuh
+    HAL_Delay(500);        // Tunggu beberapa waktu untuk menyelesaikan lompatan
+    ServoMotor_Move(0);    // Kembalikan aktuator ke posisi semula
+}
+
+// Fungsi untuk memeriksa kestabilan dari sensor gyro
+bool checkStability() {
+    MPU6050_Read_All(&gyroData); // Membaca semua data dari sensor MPU6050
+    if (abs(gyroData.KalmanAngleX) > 10 || abs(gyroData.KalmanAngleY) > 10) {
+        return false; // Jika sudut kemiringan terlalu besar, dianggap tidak stabil
+    }
+    return true; // Stabil
+}
+
+int main(void) {
+    HAL_Init();
+    SystemClock_Config();
+    
+    // Inisialisasi sensor
+    Lidar_Init();
+    MPU6050_Init();
+    ServoMotor_Init();
+
+    uint16_t distance;
+    bool stability;
+
+    while (1) {
+        // Baca jarak dari LIDAR
+        distance = readLidarDistance();
+        
+        // Periksa apakah jarak lebih kecil dari ambang batas untuk melompat
+        if (distance <= DUNK_DISTANCE_THRESHOLD) {
+            // Periksa kestabilan
+            stability = checkStability();
+            
+            if (stability) {
+                actuateJump(); // Lakukan lompatan jika stabil
+            }
+        }
+        
+        HAL_Delay(100); // Delay loop utama
+    }
+}
+
+/* 
+Penjelasan Kode:
+LIDAR: Kita menggunakan fungsi Lidar_GetDistance() yang membaca jarak dari ring basket. Jika jarak lebih kecil dari DUNK_DISTANCE_THRESHOLD (100 cm), robot akan bersiap untuk melompat.
+
+Aktuator Linier (Servo Motor): Fungsi actuateJump() akan menggerakkan servo motor ke posisi maksimum (180°), yang mensimulasikan aksi melompat. Setelah lompatan selesai, motor kembali ke posisi semula.
+
+Gyro Sensor (MPU6050): Fungsi checkStability() membaca data dari sensor gyro untuk memastikan bahwa sudut kemiringan robot masih dalam batas aman. Jika sudut kemiringan terlalu besar (>10°), lompatan tidak akan dilakukan.
+
+Output:
+Kondisi normal: Jika jarak terdeteksi cukup dekat dan stabilitas terjaga, servo motor akan bergerak untuk melakukan lompatan.
+Kondisi tidak stabil: Jika sensor gyro mendeteksi robot dalam posisi tidak stabil, lompatan akan dibatalkan untuk mencegah robot jatuh.
+*/
