@@ -1,0 +1,137 @@
+#include "stm32f4xx_hal.h"
+
+// Pin konfigurasi
+#define SERVO_PIN GPIO_PIN_0
+#define PRESSURE_SENSOR_PIN GPIO_PIN_1
+
+// Variabel global
+ADC_HandleTypeDef hadc1; // Untuk sensor tekanan (ADC)
+TIM_HandleTypeDef htim1; // Untuk PWM kontrol servo motor
+
+void SystemClock_Config(void);
+static void MX_GPIO_Init(void);
+static void MX_ADC1_Init(void);
+static void MX_TIM1_Init(void);
+void set_servo_angle(uint16_t angle);
+uint32_t read_pressure_sensor(void);
+
+int main(void)
+{
+    HAL_Init();
+    SystemClock_Config();
+    MX_GPIO_Init();
+    MX_ADC1_Init();
+    MX_TIM1_Init();
+
+    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1); // Memulai PWM untuk servo motor
+
+    while (1)
+    {
+        uint32_t pressure = read_pressure_sensor(); // Membaca nilai sensor tekanan
+
+        // Mengatur sudut servo berdasarkan tekanan yang terdeteksi
+        if (pressure < 1000)
+        {
+            set_servo_angle(0); // Gripper melepaskan bola
+        }
+        else if (pressure >= 1000 && pressure < 3000)
+        {
+            set_servo_angle(90); // Gripper memegang bola secara normal
+        }
+        else if (pressure >= 3000)
+        {
+            set_servo_angle(180); // Gripper memantulkan bola dengan kekuatan penuh
+        }
+
+        HAL_Delay(100); // Delay untuk stabilisasi
+    }
+}
+
+// Fungsi untuk membaca nilai sensor tekanan
+uint32_t read_pressure_sensor(void)
+{
+    HAL_ADC_Start(&hadc1);
+    HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
+    uint32_t pressure_value = HAL_ADC_GetValue(&hadc1);
+    HAL_ADC_Stop(&hadc1);
+    return pressure_value;
+}
+
+// Fungsi untuk mengatur sudut servo motor
+void set_servo_angle(uint16_t angle)
+{
+    uint16_t pulse_length = (angle * 10) + 600; // Konversi sudut ke panjang pulse PWM
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, pulse_length); // Mengatur PWM servo
+}
+
+// Inisialisasi ADC untuk sensor tekanan
+static void MX_ADC1_Init(void)
+{
+    ADC_ChannelConfTypeDef sConfig = {0};
+
+    hadc1.Instance = ADC1;
+    hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV2;
+    hadc1.Init.Resolution = ADC_RESOLUTION_12B;
+    hadc1.Init.ScanConvMode = DISABLE;
+    hadc1.Init.ContinuousConvMode = DISABLE;
+    hadc1.Init.DiscontinuousConvMode = DISABLE;
+    hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+    hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+    hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+    hadc1.Init.NbrOfConversion = 1;
+    HAL_ADC_Init(&hadc1);
+
+    sConfig.Channel = ADC_CHANNEL_1;
+    sConfig.Rank = 1;
+    sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+    HAL_ADC_ConfigChannel(&hadc1, &sConfig);
+}
+
+// Inisialisasi PWM untuk servo motor
+static void MX_TIM1_Init(void)
+{
+    TIM_OC_InitTypeDef sConfigOC = {0};
+
+    htim1.Instance = TIM1;
+    htim1.Init.Prescaler = 84 - 1;
+    htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
+    htim1.Init.Period = 20000 - 1;
+    htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+    HAL_TIM_PWM_Init(&htim1);
+
+    sConfigOC.OCMode = TIM_OCMODE_PWM1;
+    sConfigOC.Pulse = 0;
+    sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+    sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+    HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_1);
+}
+
+// Inisialisasi GPIO
+static void MX_GPIO_Init(void)
+{
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+    GPIO_InitStruct.Pin = SERVO_PIN;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    GPIO_InitStruct.Alternate = GPIO_AF1_TIM1;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+}
+
+void SystemClock_Config(void)
+{
+    // Konfigurasi clock sistem
+}
+
+/*
+Penjelasan Kode:
+Servo Motor: Servo digerakkan menggunakan PWM dari STM32. Sudut servo dapat diatur dengan fungsi set_servo_angle(), di mana sudut dipetakan ke lebar pulsa PWM.
+Sensor Tekanan: Menggunakan ADC untuk membaca nilai dari sensor tekanan. Nilai ini digunakan untuk mengontrol gerakan servo.
+Kontrol Bola: Berdasarkan kekuatan pantulan (dari sensor tekanan), lengan robot (gripper) akan memegang bola dengan kekuatan yang tepat.
+Output:
+Gerakan Gripper: Servo motor akan memutar gripper sesuai tekanan yang terdeteksi oleh sensor.
+Kontrol Pantulan: Pantulan bola dikontrol oleh kekuatan yang dideteksi oleh sensor tekanan.
+*/
