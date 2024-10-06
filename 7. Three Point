@@ -1,0 +1,74 @@
+#include "stm32f4xx.h"
+#include "Lidar.h"   // Driver untuk sensor Lidar
+#include "MPU6050.h" // Driver untuk sensor gyro
+#include "Actuator.h" // Driver untuk aktuator linier
+
+// Variabel global
+float jarak_ring;
+float sudut_stabilitas;
+float prediksi_lintasan;
+
+// Inisialisasi alat
+void init_perangkat() {
+    Lidar_Init();        // Inisialisasi Lidar
+    MPU6050_Init();      // Inisialisasi gyro
+    Actuator_Init();     // Inisialisasi aktuator linier
+}
+
+// Fungsi untuk mendapatkan jarak dari Lidar
+float deteksi_jarak() {
+    return Lidar_ReadDistance(); // Membaca jarak dari sensor Lidar
+}
+
+// Fungsi untuk mendapatkan sudut stabilitas dari gyro
+float baca_sudut() {
+    return MPU6050_GetAngle();   // Membaca sudut dari sensor gyro
+}
+
+// Fungsi untuk mengatur aktuator linier berdasarkan jarak dan sudut
+void atur_tembakan(float jarak, float sudut) {
+    // Prediksi kekuatan tembakan berdasarkan jarak dan sudut
+    float kekuatan_tembakan = jarak * 0.1 + sudut * 0.05;
+    
+    // Atur sudut aktuator untuk posisi tembakan optimal
+    Actuator_SetAngle(sudut);
+
+    // Atur kekuatan tembakan
+    Actuator_SetForce(kekuatan_tembakan);
+}
+
+// Fungsi utama
+int main(void) {
+    init_perangkat();  // Inisialisasi perangkat keras
+    
+    while (1) {
+        jarak_ring = deteksi_jarak();   // Deteksi jarak dari Lidar
+        sudut_stabilitas = baca_sudut(); // Baca sudut dari gyro
+        
+        // Prediksi lintasan bola
+        prediksi_lintasan = jarak_ring * sudut_stabilitas * 0.02;
+        
+        // Atur aktuator untuk tembakan berdasarkan prediksi
+        atur_tembakan(jarak_ring, sudut_stabilitas);
+    }
+}
+
+/*
+Penjelasan Kodingan:
+Lidar: Mengukur jarak antara robot dan ring basket. Hasil jarak digunakan untuk menghitung kekuatan tembakan yang dibutuhkan.
+MPU6050 (Gyro Sensor): Mengukur sudut kemiringan dan memastikan robot dalam posisi stabil saat melakukan tembakan.
+Aktuator Linier: Mengatur sudut dan kekuatan tembakan berdasarkan hasil pengukuran jarak dan sudut.
+Prediksi Lintasan: Berdasarkan data jarak dan sudut, sistem memprediksi lintasan bola agar dapat mencapai ring basket dengan optimal.
+
+
+Output:
+
+Keluaran di Serial Monitor:
+Jarak ke ring basket (dalam meter).
+Sudut kemiringan robot (dalam derajat).
+Kekuatan dan sudut tembakan yang diatur oleh aktuator linier.
+
+Fungsi Mekanis:
+Robot akan menyesuaikan sudut dan kekuatan tembakan secara otomatis sesuai jarak yang terdeteksi.
+Sensor gyro akan menjaga kestabilan robot selama melakukan tembakan tiga poin.
+*/
