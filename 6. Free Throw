@@ -1,0 +1,70 @@
+//Berikut adalah contoh kode program sederhana yang dapat digunakan pada STM32:
+
+#include "mbed.h"
+
+// Definisi Pin
+AnalogIn gyro(A0);             // Pin untuk gyroscope
+PwmOut servoMotor(D5);         // Pin untuk motor servo
+DigitalIn cameraTrigger(D2);   // Pin untuk memicu kamera
+
+// Fungsi untuk membaca nilai dari gyroscope
+float readGyroscope() {
+    return gyro.read(); // Membaca nilai dari gyroscope (0-1)
+}
+
+// Fungsi untuk mengatur sudut servo
+void setServoAngle(float angle) {
+    // Mengubah sudut menjadi duty cycle (0-1)
+    float dutyCycle = (angle / 180.0) * 1.0; 
+    servoMotor = dutyCycle; // Mengatur PWM ke motor servo
+}
+
+int main() {
+    // Inisialisasi servo motor
+    servoMotor.period(0.02); // Set period servo 20 ms
+    
+    while (true) {
+        // Membaca nilai dari gyroscope
+        float gyroValue = readGyroscope();
+        
+        // Memeriksa keseimbangan
+        if (gyroValue < 0.5) {
+            // Jika keseimbangan terjaga, atur sudut lemparan
+            float throwAngle = 45.0; // Sudut lemparan dalam derajat
+            setServoAngle(throwAngle);
+            
+            // Memicu kamera untuk mengukur jarak
+            if (cameraTrigger.read() == 1) { // Jika kamera aktif
+                // Ambil jarak dan laksanakan lemparan
+                printf("Lemparan dilakukan pada sudut: %.2f derajat\n", throwAngle);
+                // Tambahkan kode untuk menggerakkan motor servo untuk melempar bola
+            }
+        } else {
+            // Jika tidak seimbang, setel ulang sudut
+            printf("Robot tidak seimbang, penyesuaian diperlukan\n");
+            setServoAngle(0.0); // Mengatur servo ke sudut awal
+        }
+        
+        wait(0.1); // Tunggu 100 ms sebelum iterasi berikutnya
+    }
+}
+
+/*
+Penjelasan Kode
+Pengaturan Pin: Mengatur pin untuk gyroscope, motor servo, dan kamera.
+Fungsi readGyroscope: Membaca nilai dari sensor gyroscope.
+Fungsi setServoAngle: Mengubah sudut lemparan menjadi duty cycle untuk mengontrol motor servo.
+Fungsi main:
+Melakukan loop untuk terus memantau keseimbangan robot.
+Membaca nilai gyroscope dan memeriksa apakah robot seimbang.
+Jika seimbang, mengatur sudut lemparan dan memicu kamera untuk pengukuran jarak.
+Jika tidak seimbang, mengatur ulang sudut servo.
+
+
+Output
+Jika robot seimbang, akan mencetak:
+Lemparan dilakukan pada sudut: 45.00 derajat
+
+Jika robot tidak seimbang, akan mencetak:
+Robot tidak seimbang, penyesuaian diperlukan
+*/
