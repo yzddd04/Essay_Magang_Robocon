@@ -1,0 +1,53 @@
+Berikut adalah contoh kode program untuk STM32:
+
+#include "mbed.h"
+#include "Servo.h"
+
+// Inisialisasi pin untuk motor servo dan sensor jarak
+Servo servoPassing(p5); // Pin untuk motor servo
+DigitalOut led1(LED1); // LED untuk indikator
+AnalogIn sensorJarak(p6); // Pin untuk sensor jarak (ultrasonic)
+
+// Fungsi untuk mengukur jarak menggunakan sensor ultrasonic
+float getDistance() {
+    // Lakukan pengukuran jarak (contoh sederhana)
+    // Misalkan kita menggunakan analog input untuk sensor jarak
+    float voltage = sensorJarak.read() * 3.3; // Baca voltage
+    float distance = voltage * 100; // Konversi voltage ke jarak (dalam cm)
+    return distance; // Mengembalikan jarak
+}
+
+// Fungsi untuk passing
+void performPassing() {
+    led1 = 1; // Nyalakan LED sebagai indikator
+    servoPassing.write(0.5); // Gerakkan servo ke posisi passing
+    wait(1); // Tunggu 1 detik
+    servoPassing.write(0); // Kembali ke posisi awal
+    led1 = 0; // Matikan LED
+}
+
+int main() {
+    while (true) {
+        float distance = getDistance(); // Dapatkan jarak dari sensor
+        printf("Jarak ke objek: %.2f cm\n", distance); // Output jarak
+
+        // Logika sederhana untuk menentukan kapan melakukan passing
+        if (distance < 50) { // Jika ada objek dalam jarak 50 cm
+            performPassing(); // Lakukan passing
+        }
+
+        wait(0.5); // Tunggu sebelum pengukuran berikutnya
+    }
+}
+
+/*
+Penjelasan Kode
+Inisialisasi: Kode ini menginisialisasi motor servo pada pin p5 dan sensor jarak pada pin p6. Juga terdapat LED sebagai indikator.
+Fungsi getDistance: Fungsi ini membaca nilai dari sensor jarak dan mengonversi nilai tersebut menjadi jarak dalam cm.
+Fungsi performPassing: Fungsi ini menggerakkan motor servo untuk melakukan passing. Motor servo akan digerakkan ke posisi passing dan kemudian kembali ke posisi awal.
+Loop Utama: Dalam loop utama, program terus-menerus mengukur jarak. Jika jarak ke objek kurang dari 50 cm, maka sistem akan melakukan passing.
+
+Output
+Jarak ke objek: Program akan mencetak jarak ke objek yang terdeteksi oleh sensor jarak ke konsol serial.
+Gerakan Motor Servo: Lengan robot akan bergerak untuk melakukan passing sesuai dengan logika yang telah ditentukan.
+*/
