@@ -1,0 +1,83 @@
+//Berikut adalah contoh kode dalam bahasa C untuk STM32:
+
+#include "stm32f4xx.h"
+#include "usart.h" // Library untuk komunikasi serial
+#include "servo.h" // Library untuk mengendalikan servo
+#include "ultrasonic.h" // Library untuk sensor jarak
+
+#define THRESHOLD_DISTANCE 30 // Jarak ambang (cm)
+
+void setup() {
+    // Inisialisasi sistem
+    SystemInit();
+    USART_Init(); // Inisialisasi komunikasi serial
+    Servo_Init(); // Inisialisasi servo motor
+    Ultrasonic_Init(); // Inisialisasi sensor jarak
+    Camera_Init(); // Inisialisasi kamera (misal: OV7670)
+}
+
+void loop() {
+    float distance = Ultrasonic_ReadDistance(); // Membaca jarak dari sensor jarak
+
+    if (distance < THRESHOLD_DISTANCE) {
+        // Jika jarak kurang dari ambang batas, bergerak ke arah bola
+        MoveToBall();
+        if (DetectBall()) { // Deteksi bola menggunakan kamera
+            GrabBall(); // Mengambil bola
+        }
+    }
+    HAL_Delay(100); // Delay 100 ms
+}
+
+void MoveToBall() {
+    // Fungsi untuk menggerakkan robot ke arah bola
+    Servo_SetPosition(90); // Menggerakkan servo ke posisi 90 derajat (contoh)
+}
+
+int DetectBall() {
+    // Fungsi untuk mendeteksi bola
+    // Kode untuk memproses gambar dari kamera
+    // Mengembalikan 1 jika bola terdeteksi, 0 jika tidak
+    return 1; // Contoh: selalu mendeteksi bola
+}
+
+void GrabBall() {
+    // Fungsi untuk mengambil bola
+    Servo_SetPosition(0); // Menurunkan lengan untuk mengambil bola
+    HAL_Delay(500); // Tunggu 500 ms
+    Servo_SetPosition(90); // Kembali ke posisi awal
+}
+
+int main() {
+    setup(); // Memanggil fungsi setup
+    while (1) {
+        loop(); // Memanggil fungsi loop
+    }
+}
+
+/*
+Penjelasan Kode
+
+Setup Function:
+Inisialisasi sistem, USART, servo, sensor jarak, dan kamera.
+
+Loop Function:
+Membaca jarak dari sensor. Jika jarak kurang dari threshold, robot akan bergerak menuju bola.
+Jika bola terdeteksi oleh kamera, robot akan menggerakkan lengan untuk mengambil bola.
+
+MoveToBall Function:
+Menggerakkan servo motor ke posisi tertentu untuk mendekati bola.
+
+DetectBall Function:
+Proses pengolahan gambar dari kamera untuk mendeteksi bola. Dalam contoh ini, kita mengembalikan nilai 1 sebagai simulasi bola terdeteksi.
+
+GrabBall Function:
+Menggerakkan lengan robot untuk mengambil bola, dengan menurunkan dan mengangkat lengan.
+Output
+
+
+Output dari sistem ini akan berupa:
+Deteksi Jarak: Jarak dari robot ke bola yang ditampilkan di terminal serial.
+Status Deteksi: Status deteksi bola akan terlihat jika kamera berhasil mendeteksi bola.
+Gerakan Lengan: Gerakan servo motor yang dapat terlihat secara fisik saat robot berusaha untuk mengambil bola.
+*/
