@@ -1,0 +1,79 @@
+#include "stm32f4xx_hal.h"
+
+// Definisikan pin untuk servo motor dan sensor
+#define SERVO_PIN    GPIO_PIN_6
+#define SERVO_PORT   GPIOA
+
+#define GYRO_PIN     GPIO_PIN_7
+#define GYRO_PORT    GPIOA
+
+// Fungsi untuk menginisialisasi GPIO
+void GPIO_Init(void) {
+    __HAL_RCC_GPIOA_CLK_ENABLE(); // Enable clock untuk GPIOA
+
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    GPIO_InitStruct.Pin = SERVO_PIN | GYRO_PIN;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // Mode output
+    GPIO_InitStruct.Pull = GPIO_NOPULL; // Tanpa pull-up/pull-down
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW; // Kecepatan rendah
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+}
+
+// Fungsi untuk menggerakkan servo ke sudut tertentu
+void MoveServo(uint16_t angle) {
+    // Konversi sudut ke duty cycle sesuai dengan servo
+    uint16_t pulseWidth = (angle * 10) + 600; // Misal 600 untuk posisi awal
+    // Kirim sinyal PWM ke servo (belum lengkap, butuh timer konfigurasi)
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, pulseWidth);
+}
+
+// Fungsi untuk membaca data dari gyroscope (implementasi tergantung sensor)
+float ReadGyroscope(void) {
+    // Implementasi sensor gyroscope
+    return 0.0; // Placeholder
+}
+
+// Fungsi utama
+int main(void) {
+    HAL_Init(); // Inisialisasi HAL
+    GPIO_Init(); // Inisialisasi GPIO
+
+    // Misal variabel untuk sudut dan kekuatan
+    uint16_t jumpAngle = 45; // Sudut lompatan
+    float balance = 0.0;
+
+    while (1) {
+        // Baca posisi ring (menggunakan sensor, ini adalah placeholder)
+        float hoopHeight = 2.5; // Misal ketinggian ring
+        // Hitung sudut dan kekuatan berdasarkan posisi
+        // ... logika perhitungan sudut dan kekuatan
+
+        // Pindahkan servo ke sudut yang dihitung
+        MoveServo(jumpAngle);
+
+        // Baca nilai gyroscope
+        balance = ReadGyroscope();
+
+        // Implementasi kontrol keseimbangan
+        // ... logika kontrol keseimbangan
+
+        HAL_Delay(100); // Delay untuk stabilisasi
+    }
+}
+
+/*
+Penjelasan Kode
+
+Inisialisasi GPIO:
+Fungsi GPIO_Init() digunakan untuk menginisialisasi pin GPIO yang digunakan untuk servo motor dan gyroscope.
+
+Gerakan Servo:
+Fungsi MoveServo(uint16_t angle) mengubah sudut yang diterima menjadi sinyal PWM untuk menggerakkan servo ke posisi yang diinginkan.
+
+Membaca Gyroscope:
+Fungsi ReadGyroscope() merupakan placeholder untuk membaca data dari gyroscope. Implementasi nyata tergantung pada jenis sensor yang digunakan.
+
+Fungsi Utama:
+Di dalam fungsi main(), kita menjalankan loop yang terus-menerus membaca posisi ring dan menghitung sudut dan kekuatan yang diperlukan untuk lompatan.
+Servo akan bergerak berdasarkan sudut yang dihitung, dan data dari gyroscope akan digunakan untuk menjaga keseimbangan robot.
+*/
