@@ -1,0 +1,71 @@
+#include <Wire.h>
+#include <Servo.h>
+#include <MPU6050.h>
+
+MPU6050 gyro; // Inisialisasi sensor gyroscope
+Servo lengan; // Inisialisasi servo motor
+
+// Pin untuk sensor jarak
+const int triggerPin = 9;
+const int echoPin = 10;
+
+// Variabel untuk menyimpan jarak
+long duration;
+int jarak;
+
+void setup() {
+  Serial.begin(9600); // Memulai komunikasi serial
+  lengan.attach(6); // Menghubungkan servo ke pin 6
+  gyro.initialize(); // Menginisialisasi gyroscope
+  pinMode(triggerPin, OUTPUT); // Set trigger pin sebagai output
+  pinMode(echoPin, INPUT); // Set echo pin sebagai input
+}
+
+void loop() {
+  // Mengukur jarak
+  digitalWrite(triggerPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(triggerPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(triggerPin, LOW);
+  
+  duration = pulseIn(echoPin, HIGH);
+  jarak = duration * 0.034 / 2; // Menghitung jarak dalam cm
+  
+  Serial.print("Jarak: ");
+  Serial.print(jarak);
+  Serial.println(" cm");
+
+  // Logika untuk memblokir bola
+  if (jarak < 30) { // Jika jarak kurang dari 30 cm
+    // Gerakkan lengan ke posisi blok
+    lengan.write(90); // Ubah sudut servo untuk memblokir
+    delay(500); // Tunggu 500 ms
+    lengan.write(0); // Kembalikan lengan ke posisi awal
+  }
+  
+  // Menjaga keseimbangan dengan gyroscope
+  float ax, ay, az;
+  gyro.getAcceleration(&ax, &ay, &az);
+  Serial.print("Akselerasi: X=");
+  Serial.print(ax);
+  Serial.print(" Y=");
+  Serial.print(ay);
+  Serial.print(" Z=");
+  Serial.println(az);
+  
+  delay(100); // Delay sebelum pengulangan
+}
+
+/*
+Penjelasan Kode
+Inisialisasi: Pada bagian setup(), kita menginisialisasi sensor gyroscope, servo motor, dan pin untuk sensor jarak.
+Pengukuran Jarak: Di dalam loop(), kita mengukur jarak menggunakan sensor HC-SR04. Jika jarak terdeteksi kurang dari 30 cm, berarti robot lawan berada dalam jangkauan tembakan, sehingga lengan robot akan bergerak ke posisi blok.
+Gerakan Lengan: Lengan robotik diprogram untuk bergerak ke sudut 90 derajat untuk memblokir, lalu kembali ke posisi awal.
+Menjaga Keseimbangan: Data akselerasi dari gyroscope digunakan untuk menjaga keseimbangan robot.
+
+Output dari sistem ini akan mencakup:
+Pembacaan jarak dalam cm yang ditampilkan di Serial Monitor.
+Akselerasi X, Y, dan Z dari gyroscope.
+Gerakan lengan robot yang terlihat secara fisik saat memblokir bola
+*/
