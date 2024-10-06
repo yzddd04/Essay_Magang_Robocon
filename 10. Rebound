@@ -1,0 +1,74 @@
+#include "stm32f4xx_hal.h"
+
+// Definisi pin
+#define TRIG_PIN GPIO_PIN_0 // Pin untuk Trig
+#define ECHO_PIN GPIO_PIN_1 // Pin untuk Echo
+#define SERVO_PIN GPIO_PIN_2 // Pin untuk Servo
+
+// Fungsi untuk menginisialisasi GPIO
+void GPIO_Init(void) {
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    GPIO_InitStruct.Pin = TRIG_PIN | ECHO_PIN | SERVO_PIN;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+}
+
+// Fungsi untuk mengukur jarak menggunakan sensor ultrasonik
+float Measure_Distance(void) {
+    HAL_GPIO_WritePin(GPIOA, TRIG_PIN, GPIO_PIN_SET);
+    HAL_Delay(10);
+    HAL_GPIO_WritePin(GPIOA, TRIG_PIN, GPIO_PIN_RESET);
+
+    // Tunggu respon dari ECHO_PIN
+    while (HAL_GPIO_ReadPin(GPIOA, ECHO_PIN) == GPIO_PIN_RESET);
+    uint32_t start = HAL_GetTick();
+
+    while (HAL_GPIO_ReadPin(GPIOA, ECHO_PIN) == GPIO_PIN_SET);
+    uint32_t travelTime = HAL_GetTick() - start;
+
+    // Hitung jarak dalam cm
+    return (travelTime * 0.034 / 2);
+}
+
+// Fungsi untuk menggerakkan servo ke sudut tertentu
+void Move_Servo(int angle) {
+    // Konversi sudut ke PWM untuk servo
+    int pulseWidth = (angle * 10) + 600; // 600 - 2400 microseconds
+    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, pulseWidth);
+}
+
+// Fungsi utama
+int main(void) {
+    HAL_Init();
+    GPIO_Init();
+
+    // Inisialisasi Timer untuk servo
+    // Kode inisialisasi timer di sini (dilakukan di luar contoh ini)
+
+    while (1) {
+        float distance = Measure_Distance();
+        
+        if (distance < 30.0) { // Misalnya jarak kurang dari 30 cm
+            Move_Servo(90); // Gerakkan servo ke sudut 90 derajat
+            HAL_Delay(1000); // Tunggu 1 detik untuk menangkap bola
+            Move_Servo(0); // Kembali ke posisi awal
+        }
+        
+        HAL_Delay(100); // Tunggu sejenak sebelum mengukur lagi
+    }
+}
+
+/*
+Penjelasan Kode
+Inisialisasi GPIO: Mengatur pin yang diperlukan untuk sensor dan servo.
+Pengukuran Jarak: Menggunakan metode ultrasonik untuk mengukur jarak ke objek (bola) dan menghitung jarak berdasarkan waktu yang dibutuhkan untuk sinyal kembali.
+Gerakan Servo: Fungsi untuk mengubah sudut servo berdasarkan sudut yang diberikan.
+Loop Utama: Mengukur jarak secara berkala, dan jika jarak kurang dari 30 cm (bisa disesuaikan), servo akan bergerak untuk menangkap bola.
+
+Output
+Output dari Kode: Jika bola terdeteksi dalam jarak yang ditentukan (misalnya, kurang dari 30 cm), maka lengan robotik akan bergerak untuk menangkap bola. Sebaliknya, jika tidak ada bola, sistem akan terus memindai untuk bola berikutnya.
+*/
